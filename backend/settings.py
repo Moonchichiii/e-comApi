@@ -33,8 +33,8 @@ THIRD_PARTY_APPS = [
     'rest_framework_simplejwt',
     'cloudinary',
     'cloudinary_storage',
-    'axes',  # Login attempt tracking
-    'django_csp',  # Content Security Policy
+    'axes',
+    'django_csp',
 ]
 
 PROJECT_APPS = [
