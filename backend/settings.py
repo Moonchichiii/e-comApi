@@ -1,5 +1,5 @@
 """
-Settings for the e-commerce backend project.
+Django settings for e-commerce project.
 """
 
 from pathlib import Path
@@ -9,58 +9,56 @@ import dj_database_url
 import cloudinary
 import cloudinary.uploader
 import cloudinary.api
+SELF = "'self'"
+UNSAFE_INLINE = "'unsafe-inline'"
+NONE = "'none'"
 
-# Base Settings
+# Base Directory
 BASE_DIR = Path(__file__).resolve().parent.parent
+
+# Security Settings
 SECRET_KEY = config('SECRET_KEY')
-DEBUG = config('DEBUG', default=True, cast=bool)
+DEBUG = config('DEBUG', default=False, cast=bool)
 ALLOWED_HOSTS = config('ALLOWED_HOSTS', default='localhost,127.0.0.1', cast=Csv())
 
-# Application definition
-DJANGO_APPS = [
+# Installed Applications
+INSTALLED_APPS = [
     'django.contrib.admin',
     'django.contrib.auth',
     'django.contrib.contenttypes',
     'django.contrib.sessions',
     'django.contrib.messages',
     'django.contrib.staticfiles',
-]
-
-THIRD_PARTY_APPS = [
     'rest_framework',
     'corsheaders',
     'drf_spectacular',
     'rest_framework_simplejwt',
     'cloudinary',
     'cloudinary_storage',
+    'phonenumber_field',
     'axes',
-    'django_csp',
-]
-
-PROJECT_APPS = [
+    'csp',
     'users',
     'products',
     'orders',
 ]
 
-INSTALLED_APPS = DJANGO_APPS + THIRD_PARTY_APPS + PROJECT_APPS
-
-# Middleware Configuration
+# Middleware
 MIDDLEWARE = [
-    'django.middleware.security.SecurityMiddleware',
-    'django_csp.middleware.CSPMiddleware',
-    'axes.middleware.AxesMiddleware',
-    'django.contrib.sessions.middleware.SessionMiddleware',
     'corsheaders.middleware.CorsMiddleware',
+    'django.middleware.security.SecurityMiddleware',
+    'axes.middleware.AxesMiddleware',
+    'django.contrib.sessions.middleware.SessionMiddleware',    
     'django.middleware.common.CommonMiddleware',
     'django.middleware.csrf.CsrfViewMiddleware',
     'django.contrib.auth.middleware.AuthenticationMiddleware',
     'django.contrib.messages.middleware.MessageMiddleware',
     'django.middleware.clickjacking.XFrameOptionsMiddleware',
     'users.middleware.IPRateLimitMiddleware',
+    'csp.middleware.CSPMiddleware',
 ]
 
-# Security Settings
+# Security Configurations
 SECURE_SSL_REDIRECT = not DEBUG
 SESSION_COOKIE_SECURE = not DEBUG
 CSRF_COOKIE_SECURE = not DEBUG
@@ -69,15 +67,18 @@ SECURE_CONTENT_TYPE_NOSNIFF = True
 SECURE_REFERRER_POLICY = 'strict-origin-when-cross-origin'
 SECURE_PROXY_SSL_HEADER = ('HTTP_X_FORWARDED_PROTO', 'https')
 
+# Site Identity
+SITE_ID = 1
+
 if not DEBUG:
     SECURE_HSTS_SECONDS = 31536000
     SECURE_HSTS_INCLUDE_SUBDOMAINS = True
     SECURE_HSTS_PRELOAD = True
 
-# CORS Configuration
+# CORS Settings
 CORS_ALLOWED_ORIGINS = config(
     'CORS_ALLOWED_ORIGINS',
-    default='http://localhost:5174,http://127.0.0.1:5174',
+    default='http://localhost:5173,http://127.0.0.1:5173',
     cast=Csv()
 )
 CORS_ALLOW_CREDENTIALS = True
@@ -101,7 +102,7 @@ AUTHENTICATION_BACKENDS = (
     'django.contrib.auth.backends.ModelBackend',
 )
 
-# Password Security
+# Password Validators
 PASSWORD_HASHERS = [
     'django.contrib.auth.hashers.Argon2PasswordHasher',
     'django.contrib.auth.hashers.PBKDF2PasswordHasher',
@@ -125,15 +126,19 @@ AUTH_PASSWORD_VALIDATORS = [
     },
 ]
 
-# Django Axes Configuration
+# Axes Settings
 AXES_FAILURE_LIMIT = 5
 AXES_COOLOFF_TIME = 1
-AXES_LOCK_OUT_BY_COMBINATION_USER_AND_IP = True
-AXES_LOCKOUT_TEMPLATE = None
 AXES_RESET_ON_SUCCESS = True
 AXES_ENABLED = True
+AXES_LOCKOUT_PARAMETERS = [["username", "ip_address", "user_agent"]]
+AXES_IPWARE_PROXY_ORDER = 'reverse'
+AXES_IPWARE_PROXY_COUNT = 1
+AXES_IPWARE_PROXY_TRUSTED_IPS = ['127.0.0.1']
+AXES_IPWARE_META_PRECEDENCE_ORDER = ['HTTP_X_FORWARDED_FOR', 'REMOTE_ADDR']
+AXES_HTTP_RESPONSE_CODE = 403
 
-# JWT Configuration
+# JWT Settings
 SIMPLE_JWT = {
     'ACCESS_TOKEN_LIFETIME': timedelta(minutes=15),
     'REFRESH_TOKEN_LIFETIME': timedelta(days=7),
@@ -145,7 +150,9 @@ SIMPLE_JWT = {
     'VERIFYING_KEY': None,
     'AUTH_HEADER_TYPES': ('Bearer',),
     'AUTH_HEADER_NAME': 'HTTP_AUTHORIZATION',
-    'USER_ID_FIELD': 'id',
+    'USER_AUTHENTICATION_RULE': (
+        'rest_framework_simplejwt.authentication.default_user_authentication_rule'
+    ),
     'USER_ID_CLAIM': 'user_id',
     'USER_AUTHENTICATION_RULE': 'rest_framework_simplejwt.authentication.default_user_authentication_rule',
     'AUTH_TOKEN_CLASSES': ('rest_framework_simplejwt.tokens.AccessToken',),
@@ -157,7 +164,7 @@ SIMPLE_JWT = {
     'SLIDING_TOKEN_REFRESH_LIFETIME': timedelta(days=1),
 }
 
-# REST Framework Configuration
+# REST Framework Settings
 REST_FRAMEWORK = {
     'DEFAULT_AUTHENTICATION_CLASSES': (
         'rest_framework_simplejwt.authentication.JWTAuthentication',
@@ -178,17 +185,17 @@ REST_FRAMEWORK = {
         'password_reset': '3/hour',
         'email_verify': '5/day',
     },
-    'EXCEPTION_HANDLER': 'users.utils.custom_exception_handler',
+     'EXCEPTION_HANDLER': 'users.utils.custom_exception_handler.custom_exception_handler',
 }
 
-# Session Configuration
+# Session Settings
 SESSION_ENGINE = 'django.contrib.sessions.backends.cached_db'
-SESSION_COOKIE_AGE = 3600  # 1 hour
+SESSION_COOKIE_AGE = 3600
 SESSION_COOKIE_HTTPONLY = True
 SESSION_COOKIE_SAMESITE = 'Strict'
 SESSION_SAVE_EVERY_REQUEST = True
 
-# Cache Configuration
+# Cache Settings
 CACHES = {
     'default': {
         'BACKEND': 'django.core.cache.backends.locmem.LocMemCache',
@@ -199,20 +206,20 @@ CACHES = {
     }
 }
 
-# Social Auth Configuration
+# Social Auth Settings
 SOCIAL_AUTH_GOOGLE_OAUTH2_KEY = config('GOOGLE_OAUTH2_KEY', default='')
 SOCIAL_AUTH_GOOGLE_OAUTH2_SECRET = config('GOOGLE_OAUTH2_SECRET', default='')
 SOCIAL_AUTH_FACEBOOK_KEY = config('FACEBOOK_KEY', default='')
 SOCIAL_AUTH_FACEBOOK_SECRET = config('FACEBOOK_SECRET', default='')
 
-# Frontend Configuration
-FRONTEND_URL = config('FRONTEND_URL', default='http://localhost:5174')
+# Frontend URL
+FRONTEND_URL = config('FRONTEND_URL', default='http://localhost:5173')
 
-# Rate Limiting
+# Rate Limit Settings
 RATELIMIT_USE_CACHE = 'default'
 RATELIMIT_ENABLE = True
 
-# Templates Configuration
+# Templates Settings
 TEMPLATES = [
     {
         'BACKEND': 'django.template.backends.django.DjangoTemplates',
@@ -229,7 +236,7 @@ TEMPLATES = [
     },
 ]
 
-# Database Configuration
+# Database Settings
 DATABASES = {
     'default': config(
         'DATABASE_URL',
@@ -238,7 +245,7 @@ DATABASES = {
     )
 }
 
-# Cloudinary Configuration
+# Cloudinary Settings
 cloudinary.config(
     cloud_name=config('CLOUDINARY_CLOUD_NAME', default=''),
     api_key=config('CLOUDINARY_API_KEY', default=''),
@@ -246,10 +253,11 @@ cloudinary.config(
     secure=True
 )
 
+# Storage Settings
 DEFAULT_FILE_STORAGE = 'cloudinary_storage.storage.MediaCloudinaryStorage'
 STATICFILES_STORAGE = 'cloudinary_storage.storage.StaticHashedCloudinaryStorage'
 
-# Email Configuration
+# Email Settings
 EMAIL_BACKEND = 'django.core.mail.backends.smtp.EmailBackend'
 EMAIL_HOST = config('EMAIL_HOST', default='smtp.gmail.com')
 EMAIL_PORT = config('EMAIL_PORT', default=587, cast=int)
@@ -257,21 +265,52 @@ EMAIL_USE_TLS = config('EMAIL_USE_TLS', default=True, cast=bool)
 EMAIL_HOST_USER = config('EMAIL_HOST_USER', default='')
 EMAIL_HOST_PASSWORD = config('EMAIL_HOST_PASSWORD', default='')
 
-# Static & Media Configuration
+# Static and Media Files
 STATIC_URL = 'static/'
 STATIC_ROOT = BASE_DIR / 'staticfiles'
 MEDIA_URL = 'media/'
 MEDIA_ROOT = BASE_DIR / 'media'
 
-# Stripe Configuration
+# Stripe Settings
 STRIPE_PUBLIC_KEY = config('STRIPE_PUB_KEY')
 STRIPE_SECRET_KEY = config('STRIPE_SECRET_KEY')
 
-# Misc Configuration
+# URL and WSGI Settings
 ROOT_URLCONF = 'backend.urls'
 WSGI_APPLICATION = 'backend.wsgi.application'
+
+# Localization Settings
 LANGUAGE_CODE = 'en-us'
 TIME_ZONE = 'UTC'
 USE_I18N = True
 USE_TZ = True
+
+# Default Primary Key Field Type
 DEFAULT_AUTO_FIELD = 'django.db.models.BigAutoField'
+
+# Content Security Policy
+CONTENT_SECURITY_POLICY = {
+    "DIRECTIVES": {
+        "default-src": [SELF],
+        "script-src": [SELF, UNSAFE_INLINE],
+        "style-src": [SELF, UNSAFE_INLINE],
+        "img-src": [SELF, "data:", "https:"],
+        "font-src": [SELF, "https://fonts.gstatic.com"],
+        "connect-src": [SELF],
+        "form-action": [SELF],
+        "frame-ancestors": [SELF],
+        "report-uri": "/csp-report/",
+        "upgrade-insecure-requests": True,
+    },
+}
+
+CONTENT_SECURITY_POLICY_REPORT_ONLY = {
+    "DIRECTIVES": {
+        "default-src": [SELF],
+        "script-src": [NONE],
+        "style-src": [SELF],
+        "img-src": [SELF],
+        "connect-src": [SELF],
+        "report-uri": "/csp-report/",
+    },
+}

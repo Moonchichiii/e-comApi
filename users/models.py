@@ -9,6 +9,7 @@ from django.core.validators import EmailValidator
 from django.db import models
 from django.utils import timezone
 from django.utils.translation import gettext_lazy as _
+from phonenumber_field.modelfields import PhoneNumberField
 
 
 class UserManager(BaseUserManager):
@@ -145,6 +146,18 @@ class User(AbstractBaseUser, PermissionsMixin):
         _('require password change'),
         default=False,
         help_text=_('Indicates if the user must change their password on next login')
+    )
+    phone_number = PhoneNumberField(
+        _('phone number'),
+        unique=True,
+        null=True,
+        blank=True,
+        help_text=_('Required. Enter a valid phone number.')
+    )
+    phone_verified = models.BooleanField(
+        _('phone verified'),
+        default=False,
+        help_text=_('Indicates whether this user has verified their phone number.')
     )
 
     objects = UserManager()

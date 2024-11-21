@@ -4,7 +4,7 @@ Includes email verification and social authentication functionality.
 """
 
 from typing import Any, TypeVar, cast
-
+from django.http import JsonResponse
 from django.contrib.auth import get_user_model
 from django.contrib.auth.tokens import default_token_generator
 from django.http import HttpRequest
@@ -15,6 +15,7 @@ from django.utils.http import urlsafe_base64_decode
 from django_ratelimit.decorators import ratelimit
 from rest_framework import status, generics
 from rest_framework.permissions import IsAuthenticated, AllowAny
+from rest_framework.views import APIView
 from rest_framework.response import Response
 from rest_framework.views import APIView
 from rest_framework_simplejwt.views import TokenObtainPairView
@@ -229,3 +230,23 @@ class SocialLoginView(APIView):
                 'email_verified': user.email_verified
             }
         })
+        
+class CurrentUserView(APIView):
+    """Return the authenticated user's information."""
+    permission_classes = [IsAuthenticated]
+
+    def get(self, request, *args, **kwargs):
+        user = request.user
+        data = {
+            'id': str(user.id),
+            'email': user.email,
+            'first_name': user.first_name,
+            'last_name': user.last_name,
+            'email_verified': user.email_verified,
+        }
+        return Response(data, status=status.HTTP_200_OK)
+        
+
+def csp_report(request):
+    """Log or process CSP violation reports."""
+    return JsonResponse({"status": "CSP report received."}, status=200)
